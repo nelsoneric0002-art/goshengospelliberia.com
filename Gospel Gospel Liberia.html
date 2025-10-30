@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOSHEN GOSPEL LIBERIA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Light gray background */
+        }
+       
+        /* --- HEADER STYLE: SHARP OUTLINE EFFECT --- */
+        .text-gospel-sharp {
+            /* Creates a sharp, 1px outline using the primary blue color */
+            text-shadow:
+                -1px -1px 0 #312e81,
+                1px -1px 0 #312e81,  
+                -1px 1px 0 #312e81,  
+                1px 1px 0 #312e81;  
+        }
+       
+        /* Custom styles for the overlay modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: none; /* Controlled by JS */
+            justify-content: center;
+            align-items: center;
+        }
+        /* Responsive Aspect Ratio for Videos (16:9) */
+        .video-responsive {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 0.75rem; /* Rounded corners */
+        }
+        .video-responsive iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    </style>
+    <script>
+        // --- Constants for Commission and Persistence ---
+        const DEV_PASSWORD = 'goshendev2025';
+        const COMMISSION_BALANCE_KEY = 'commissionBalanceLRD';
+        const CUSTOM_BG_KEY = 'customHeaderBackground'; // Key for the background image
+        // Simulating 100 downloads at an assumed LRD 50.00 commission per song
+        const DOWNLOAD_COMMISSION_PER_SIMULATED_BATCH = 5000;
+       
+        // --- Helper Functions for Balance Management ---
+
+        /** Retrieves the current commission balance from localStorage. */
+        function getBalance() {
+            const balance = localStorage.getItem(COMMISSION_BALANCE_KEY);
+            return parseFloat(balance) || 0.00;
+        }
+
+        /** Updates the displayed commission balance on the panel. */
+        function updateBalanceDisplay() {
+            const balance = getBalance();
+            const displayElement = document.getElementById('commission-balance-display');
+            if (displayElement) {
+                displayElement.textContent = `LRD ${balance.toFixed(2)}`;
+            }
+        }
+       
+        /** Simulates a batch of downloads and updates the commission balance. */
+        function simulateEarning() {
+            let currentBalance = getBalance();
+            currentBalance += DOWNLOAD_COMMISSION_PER_SIMULATED_BATCH;
+            // Store the new balance, ensuring only two decimal places
+            localStorage.setItem(COMMISSION_BALANCE_KEY, currentBalance.toFixed(2));
+            updateBalanceDisplay();
+
+            const messageBox = document.getElementById('dev-message-box');
+            messageBox.innerHTML = `
+                <strong class="text-lg">Earnings Simulated!</strong><br>
+                Added LRD ${DOWNLOAD_COMMISSION_PER_SIMULATED_BATCH.toFixed(2)} from 100 downloads.<br>
+                New Balance: <span class="font-bold">LRD ${currentBalance.toFixed(2)}</span>
+            `;
+           
+            // Display the message in a blue success style
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+            messageBox.classList.add('bg-blue-100', 'text-blue-700', 'text-center');
+
+            // Hide message after 5 seconds
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 5000);
+        }
+
+        /** Handles the simulated commission withdrawal process. */
+        function handleWithdrawal(event) {
+            event.preventDefault();
+           
+            const amountInput = document.getElementById('withdrawal-amount');
+            const numberInput = document.getElementById('mobile-money-number');
+            const messageBox = document.getElementById('dev-message-box');
+
+            const amount = parseFloat(amountInput.value);
+            const mobileNumber = numberInput.value.trim();
+            let currentBalance = getBalance();
+
+            // Reset message box classes
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
+            messageBox.classList.add('text-center');
+
+            // 1. Basic Validation
+            if (isNaN(amount) || amount <= 0) {
+                messageBox.innerHTML = '<strong>Error:</strong> Please enter a valid amount greater than zero.';
+                messageBox.classList.add('bg-red-100', 'text-red-700');
+                return;
+            }
+
+            // 2. Balance Check
+            if (amount > currentBalance) {
+                messageBox.innerHTML = `<strong>Error:</strong> Insufficient balance. Available: LRD ${currentBalance.toFixed(2)}.`;
+                messageBox.classList.add('bg-red-100', 'text-red-700');
+                return;
+            }
+           
+            // 3. Mobile Number Format Check (Lonestar Cell 088 format)
+            // Checks for exactly 10 digits starting with 088
+            if (!mobileNumber.match(/^088[0-9]{7}$/)) {
+                messageBox.innerHTML = '<strong>Error:</strong> Please enter a valid 10-digit Lonestar Cell number starting with 088.';
+                messageBox.classList.add('bg-red-100', 'text-red-700');
+                return;
+            }
+
+            // --- SUCCESSFUL WITHDRAWAL SIMULATION ---
+           
+            // Deduct the amount
+            currentBalance -= amount;
+            localStorage.setItem(COMMISSION_BALANCE_KEY, currentBalance.toFixed(2));
+           
+            // Update the display
+            updateBalanceDisplay();
+
+            // Show success message
+            messageBox.innerHTML = `
+                <strong class="text-lg">Withdrawal Requested!</strong><br>
+                LRD ${amount.toFixed(2)} requested for mobile number <span class="font-bold">${mobileNumber}</span>.<br>
+                Your request has been submitted and is processing.<br>
+                <span class="text-xs italic text-green-600">New Balance: LRD ${currentBalance.toFixed(2)}</span>
+            `;
+            messageBox.classList.add('bg-green-100', 'text-green-700');
+           
+            // Clear form and hide message after a delay
+            document.getElementById('withdrawal-form').reset();
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 8000);
+        }
+
+        // --- Developer Role Simulation ---
+
+        function showPasswordModal() {
+            document.getElementById('password-modal').style.display = 'flex';
+        }
+
+        function hidePasswordModal() {
+            document.getElementById('password-modal').style.display = 'none';
+            document.getElementById('dev-password-input').value = '';
+            document.getElementById('modal-message-box').classList.add('hidden');
+        }
+
+        function handleDevLogin(event) {
+            event.preventDefault();
+            const passwordInput = document.getElementById('dev-password-input');
+            const messageBox = document.getElementById('modal-message-box');
+
+            if (passwordInput.value === DEV_PASSWORD) {
+                localStorage.setItem('isDeveloper', 'true');
+                messageBox.textContent = 'Login successful!';
+                messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700');
+                messageBox.classList.add('bg-green-100', 'text-green-700');
+               
+                // Wait briefly for user to see success, then hide modal and check mode
+                setTimeout(() => {
+                    hidePasswordModal();
+                    checkDeveloperMode();
+                }, 500);
+
+            } else {
+                messageBox.textContent = 'Invalid password.';
+                messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
+                messageBox.classList.add('bg-red-100', 'text-red-700');
+                passwordInput.value = ''; // Clear input on failure
+            }
+        }
+
+        function developerLogout() {
+            localStorage.removeItem('isDeveloper');
+            checkDeveloperMode();
+        }
+
+        function checkDeveloperMode() {
+            const isDev = localStorage.getItem('isDeveloper') === 'true';
+            const devPanel = document.getElementById('developer-panel');
+            const devLoginBtn = document.getElementById('dev-login-btn');
+
+            if (devPanel && devLoginBtn) {
+                if (isDev) {
+                    // Show the panel
+                    devPanel.classList.remove('hidden');
+                    // Update the balance display immediately upon login
+                    updateBalanceDisplay();
+                    // Hide the login button/change to logout
+                    devLoginBtn.textContent = 'Developer Logout';
+                    devLoginBtn.onclick = developerLogout;
+                } else {
+                    // Hide the panel
+                    devPanel.classList.add('hidden');
+                    // Show the login button/change to login
+                    devLoginBtn.textContent = 'Developer Login';
+                    devLoginBtn.onclick = showPasswordModal;
+                }
+            }
+        }
+        // --- End Developer Role Simulation ---
+
+        // --- Custom Background Image Management ---
+
+        /** Loads the custom background image from localStorage and applies it to the #home section. */
+        function loadCustomBackground() {
+            const bgUrl = localStorage.getItem(CUSTOM_BG_KEY);
+            const homeSection = document.getElementById('home');
+           
+            if (bgUrl && homeSection) {
+                homeSection.style.backgroundImage = `url('${bgUrl}')`;
+                // Tailwind classes handle bg-cover and bg-center, but we need to ensure the image URL is set
+            } else {
+                homeSection.style.backgroundImage = ''; // Clear style if not found
+            }
+        }
+
+        /** Handles the file upload, converts it to a data URL, applies, and saves it. */
+        function handleBackgroundUpload(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('header-bg-file');
+            const file = fileInput.files[0];
+            const messageBox = document.getElementById('dev-message-box');
+
+            if (!file) {
+                messageBox.innerHTML = '<strong>Error:</strong> Please select an image file to upload.';
+                messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
+                messageBox.classList.add('bg-red-100', 'text-red-700', 'text-center');
+                setTimeout(() => { messageBox.classList.add('hidden'); }, 5000);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const bgUrl = e.target.result;
+                const homeSection = document.getElementById('home');
+
+                // 1. Apply Style
+                if (homeSection) {
+                    homeSection.style.backgroundImage = `url('${bgUrl}')`;
+                }
+
+                // 2. Save to localStorage
+                localStorage.setItem(CUSTOM_BG_KEY, bgUrl);
+
+                // 3. Show Success
+                messageBox.innerHTML = '<strong>Success!</strong> New header background image applied and saved.';
+                messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700');
+                messageBox.classList.add('bg-green-100', 'text-green-700', 'text-center');
+                setTimeout(() => { messageBox.classList.add('hidden'); }, 5000);
+            };
+
+            reader.readAsDataURL(file);
+            document.getElementById('header-bg-upload-form').reset();
+        }
+       
+        /** Removes the custom background image. */
+        function clearCustomBackground() {
+            const homeSection = document.getElementById('home');
+            const messageBox = document.getElementById('dev-message-box');
+
+            if (homeSection) {
+                homeSection.style.backgroundImage = '';
+                localStorage.removeItem(CUSTOM_BG_KEY);
+            }
+           
+            messageBox.innerHTML = '<strong>Background Cleared!</strong> Default background color restored.';
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+            messageBox.classList.add('bg-blue-100', 'text-blue-700', 'text-center');
+            setTimeout(() => { messageBox.classList.add('hidden'); }, 5000);
+        }
+
+        // --- End Custom Background Image Management ---
+       
+        // --- NEW: Flyer/Promotional Upload Management ---
+        function handleFlyerUpload(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('flyer-file');
+            const file = fileInput.files[0];
+            const messageBox = document.getElementById('dev-message-box');
+
+            // Reset message box classes for success
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700', 'bg-green-100', 'text-green-700');
+            messageBox.classList.add('text-center');
+
+            if (!file) {
+                messageBox.innerHTML = '<strong>Error:</strong> Please select an image or PDF file to upload.';
+                messageBox.classList.add('bg-red-100', 'text-red-700');
+                setTimeout(() => { messageBox.classList.add('hidden'); }, 5000);
+                return;
+            }
+
+            // Simulate saving the flyer file details (in a real app, this would upload to cloud storage)
+            const fileName = file.name;
+            // Provide file size info, but protect against large files by checking size property
+            const fileSize = file.size ? (file.size / 1024 / 1024).toFixed(2) : 'N/A'; // Size in MB
+
+            messageBox.innerHTML = `
+                <strong class="text-lg">Promotional Flyer Upload Simulated!</strong><br>
+                <strong>File Name:</strong> ${fileName}<br>
+                <strong>Size:</strong> ${fileSize} MB<br>
+                <span class="text-xs italic text-blue-700">This asset would now be securely saved for use on event pages.</span>
+            `;
+            messageBox.classList.add('bg-blue-100', 'text-blue-700');
+
+            document.getElementById('flyer-upload-form').reset();
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 8000);
+        }
+        // --- END NEW: Flyer/Promotional Upload Management ---
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-blue': '#312e81', // Deep Indigo/Navy
+                        'accent-gold': '#fcd34d', // Bright Amber/Gold
+                    }
+                }
+            }
+        }
+       
+        /**
+         * Function to handle the simulated song upload from the developer panel.
+         */
+        function handleSongUpload(event) {
+            event.preventDefault();
+           
+            const title = document.getElementById('song-title').value;
+            const artist = document.getElementById('artist-name').value;
+            // Get the commission rate (LRD per download)
+            const commissionRate = document.getElementById('commission-rate').value;
+           
+            const fileInput = document.getElementById('song-file');
+            const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : 'No File';
+           
+            // Capture the image input (now specifically for album art)
+            const imageInput = document.getElementById('artist-image');
+            const imageName = imageInput.files.length > 0 ? imageInput.files[0].name : 'No Image';
+
+            const messageBox = document.getElementById('dev-message-box'); // Use the dedicated Dev message box
+
+            // Reset message box classes for success
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700', 'bg-green-100', 'text-green-700');
+            messageBox.classList.add('bg-green-100', 'text-green-700', 'text-left');
+
+            // Update simulation message to include all metadata
+            messageBox.innerHTML = `
+                <strong class="text-lg">Simulated Song Upload Success!</strong><br>
+                <strong>Title:</strong> ${title}<br>
+                <strong>Artist:</strong> ${artist}<br>
+                <strong>Commission Rate:</strong> <span class="text-green-700 font-semibold">LRD ${parseFloat(commissionRate).toFixed(2)}</span> per download<br>
+                <strong>Album Art File:</strong> ${imageName}<br>
+                <strong>Song File:</strong> ${fileName}<br>
+                <span class="text-xs italic text-green-600">This data would now be securely saved to your music database and cloud storage.</span>
+            `;
+           
+            // Optionally reset the form after simulation
+            document.getElementById('song-upload-form').reset();
+
+            // Hide message after 8 seconds (a bit longer since the message is detailed)
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 8000);
+        }
+
+        /**
+         * Function to handle the simulated video upload from the developer panel.
+         */
+        function handleVideoUpload(event) {
+            event.preventDefault();
+
+            const title = document.getElementById('video-title').value;
+            const artist = document.getElementById('video-artist-name').value;
+            const embedUrl = document.getElementById('video-embed-url').value;
+
+            const messageBox = document.getElementById('dev-message-box');
+
+            // Basic URL validation (simple check for embed format)
+            if (!embedUrl.includes('youtube.com/embed/')) {
+                messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700', 'bg-red-100');
+                messageBox.classList.add('bg-red-100', 'text-red-700', 'text-left');
+                messageBox.innerHTML = '<strong>Error:</strong> Please enter a valid YouTube Embed URL (e.g., must contain "youtube.com/embed/").';
+                setTimeout(() => { messageBox.classList.add('hidden'); }, 5000);
+                return;
+            }
+
+            // Reset message box classes for success
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700', 'bg-green-100', 'text-green-700');
+            messageBox.classList.add('bg-blue-100', 'text-blue-700', 'text-left'); // Use blue for informational update
+
+            // Update simulation message
+            messageBox.innerHTML = `
+                <strong class="text-lg">Simulated Video Link Submission Success!</strong><br>
+                <strong>Title:</strong> ${title}<br>
+                <strong>Artist:</strong> ${artist}<br>
+                <strong>Embed URL:</strong> ${embedUrl}<br>
+                <span class="text-xs italic text-blue-700">This video link would now be securely saved to the video database and appear in the "Videos" section.</span>
+            `;
+
+            // Optionally reset the form after simulation
+            document.getElementById('video-upload-form').reset();
+
+            // Hide message after 8 seconds (a bit longer since the message is detailed)
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 8000);
+        }
+
+        // Simple form submission handler (non-functional for this demo)
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const form = event.target;
+            const messageBox = document.getElementById('contact-message-box'); // Use the Contact message box
+
+            messageBox.textContent = 'Thank you for your message! We will be in touch soon.';
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700');
+            messageBox.classList.add('bg-green-100', 'text-green-700');
+            form.reset();
+
+            // Hide message after 5 seconds
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 5000);
+        }
+       
+        // Simple smooth scrolling for navigation
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            // Handle mobile menu toggle
+            const menuButton = document.getElementById('menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            menuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // Check dev mode on page load
+            checkDeveloperMode();
+           
+            // Load custom background image if available
+            loadCustomBackground();
+        });
+    </script>
+</head>
+<body class="antialiased">
+
+    <header class="sticky top-0 z-50 bg-primary-blue shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="#" class="text-3xl md:text-4xl font-extrabold text-accent-gold tracking-wider text-gospel-sharp uppercase">
+                    GOSHEN GOSPEL LIBERIA
+                </a>
+
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#home" class="text-white hover:text-accent-gold transition duration-150">Home</a>
+                    <a href="#about" class="text-white hover:text-accent-gold transition duration-150">About</a>
+                    <a href="#music" class="text-white hover:text-accent-gold transition duration-150">Music</a>
+                    <a href="#videos" class="text-white hover:text-accent-gold transition duration-150">Videos</a>
+                    <a href="#events" class="text-white hover:text-accent-gold transition duration-150">Events</a>
+                    <a href="#contact" class="text-white hover:text-accent-gold transition duration-150">Contact</a>
+                </nav>
+
+                <button id="menu-button" class="md:hidden text-accent-gold focus:outline-none p-2 rounded-lg hover:bg-indigo-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="md:hidden hidden bg-indigo-800 pb-2">
+            <a href="#home" class="block px-4 py-2 text-white hover:bg-indigo-700">Home</a>
+            <a href="#about" class="block px-4 py-2 text-white hover:bg-indigo-700">About</a>
+            <a href="#music" class="block px-4 py-2 text-white hover:bg-indigo-700">Music</a>
+            <a href="#videos" class="block px-4 py-2 text-white hover:bg-indigo-700">Videos</a>
+            <a href="#events" class="block px-4 py-2 text-white hover:bg-indigo-700">Events</a>
+            <a href="#contact" class="block px-4 py-2 text-white hover:bg-indigo-700">Contact</a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto">
+        <!-- HOME SECTION - Modified for Custom Background -->
+        <section id="home" class="relative bg-indigo-900 py-20 px-4 sm:px-6 lg:px-8 rounded-b-xl shadow-2xl mb-12 bg-cover bg-center transition duration-500" style="background-image: none;">
+            <!-- Overlay to ensure text readability -->
+            <div class="absolute inset-0 bg-black bg-opacity-40 rounded-b-xl z-0"></div>
+           
+            <!-- Content Wrapper -->
+            <div class="relative text-white text-center z-10">
+                <h1 class="text-5xl md:text-6xl font-extrabold mb-4">
+                    Praise, Worship, and the Power of the Word
+                </h1>
+                <p class="text-xl md:text-2xl text-indigo-200 mb-8 max-w-3xl mx-auto">
+                    Welcome to GOSHEN. Our mission is to share the light of faith through uplifting and soulful music.
+                </p>
+                <a href="#music" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full shadow-xl text-primary-blue bg-accent-gold hover:bg-yellow-400 transition duration-300 transform hover:scale-105">
+                    Listen to Our Latest Album
+                    <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 108 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                </a>
+            </div>
+        </section>
+
+        <section id="developer-panel" class="hidden bg-red-50 p-6 rounded-xl shadow-lg my-12 max-w-7xl mx-auto border-4 border-red-300">
+            <h2 class="text-3xl font-bold text-center mb-6 text-red-700">
+                Developer Music Management Panel
+            </h2>
+            <div class="text-center text-red-600">
+                <p class="mb-4 font-semibold text-lg">
+                    (Secret Key: <code class="bg-red-200 p-1 rounded font-mono">goshendev2025</code>)
+                </p>
+               
+                <div class="max-w-4xl mx-auto">
+                    <!-- Developer Message Box -->
+                    <div id="dev-message-box" class="hidden p-4 rounded-lg mb-4 font-medium text-center transition duration-300" role="alert">
+                    </div>
+
+                    <!-- Commission Management: Balance & Withdrawal -->
+                    <div class="flex flex-col lg:flex-row gap-6 mb-8">
+                        <!-- Commission Balance Display -->
+                        <div class="lg:w-1/2 bg-primary-blue/10 p-4 rounded-xl border-2 border-primary-blue/30 shadow-inner">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-bold text-primary-blue">Current Artist Commission Balance</h3>
+                                <button onclick="simulateEarning()" class="bg-primary-blue text-white py-1 px-3 rounded-full text-xs font-semibold hover:bg-indigo-700 transition duration-150 shadow-md transform hover:scale-105">
+                                    Simulate 100 Downloads
+                                </button>
+                            </div>
+                            <p id="commission-balance-display" class="text-4xl font-extrabold text-green-700 text-left">
+                                LRD 0.00
+                            </p>
+                            <p class="text-xs text-gray-500 text-left mt-1">This balance persists using browser storage (LRD - Liberian Dollar).</p>
+                        </div>
+
+                        <!-- Commission Withdrawal Card -->
+                        <div class="lg:w-1/2 bg-white p-4 rounded-xl shadow-lg border-2 border-green-300">
+                            <h3 class="text-xl font-bold text-green-700 mb-4 text-center border-b pb-2 border-green-200">
+                                Commission Withdrawal Request
+                            </h3>
+                            <form id="withdrawal-form" onsubmit="handleWithdrawal(event)" class="space-y-4">
+                                <div>
+                                    <label for="withdrawal-amount" class="block text-sm font-medium text-gray-700 mb-1 text-left">Amount (LRD)</label>
+                                    <input type="number" id="withdrawal-amount" required min="100.00" step="0.01" placeholder="Minimum LRD 100.00" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150 text-gray-800">
+                                </div>
+                                <div>
+                                    <label for="mobile-money-number" class="block text-sm font-medium text-gray-700 mb-1 text-left">Lonestar Cell Mobile Money Number</label>
+                                    <input type="tel" id="mobile-money-number" required pattern="088[0-9]{7}" maxlength="10" placeholder="e.g., 088xxxxxxx (10 digits)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition duration-150 text-gray-800">
+                                    <p class="text-xs text-gray-500 mt-1 text-left">Must be a valid 10-digit Lonestar Cell number starting with 088.</p>
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-full font-semibold hover:bg-green-700 transition duration-150 shadow-md transform hover:scale-[1.01]">
+                                    Request Withdrawal
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                   
+                    <!-- Custom Header Background Upload -->
+                    <div class="bg-yellow-50 p-6 rounded-xl shadow-inner border-2 border-yellow-300 mb-8">
+                        <h3 class="text-xl font-bold text-primary-blue mb-4 text-center border-b pb-2 border-yellow-200">
+                            Custom Header Background Upload
+                        </h3>
+                        <form id="header-bg-upload-form" onsubmit="handleBackgroundUpload(event)" class="space-y-4">
+                            <!-- Image File Input -->
+                            <div>
+                                <label for="header-bg-file" class="block text-sm font-medium text-primary-blue mb-1 text-left">Select Header Photo (.jpg, .png)</label>
+                                <input type="file" id="header-bg-file" accept="image/jpeg,image/png" required class="w-full text-gray-600 bg-white border border-yellow-300 rounded-lg p-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-100 file:text-primary-blue hover:file:bg-yellow-200 transition duration-150">
+                                <p class="text-xs text-gray-500 mt-1 text-left">This image is converted to a local data URL and saved to your browser's storage.</p>
+                            </div>
+                           
+                            <div class="flex space-x-4">
+                                <button type="submit" class="w-full bg-primary-blue text-accent-gold py-3 rounded-full font-semibold hover:bg-indigo-700 transition duration-150 shadow-md transform hover:scale-[1.01]">
+                                    Upload & Apply Background
+                                </button>
+                                <button type="button" onclick="clearCustomBackground()" class="w-1/3 bg-gray-400 text-white py-3 rounded-full font-semibold hover:bg-gray-500 transition duration-150 shadow-md">
+                                    Clear Background
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                   
+                    <!-- NEW: Promotional Flyer Upload -->
+                    <div class="bg-indigo-50 p-6 rounded-xl shadow-inner border-2 border-indigo-300 mb-8">
+                        <h3 class="text-xl font-bold text-primary-blue mb-4 text-center border-b pb-2 border-indigo-200">
+                            Promotional Flyer / Asset Upload
+                        </h3>
+                        <form id="flyer-upload-form" onsubmit="handleFlyerUpload(event)" class="space-y-4">
+                            <!-- Flyer File Input -->
+                            <div>
+                                <label for="flyer-file" class="block text-sm font-medium text-primary-blue mb-1 text-left">Select Flyer Image (.jpg, .png, .pdf)</label>
+                                <input type="file" id="flyer-file" accept="image/jpeg,image/png,application/pdf" required class="w-full text-gray-600 bg-white border border-indigo-300 rounded-lg p-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-primary-blue hover:file:bg-indigo-200 transition duration-150">
+                                <p class="text-xs text-gray-500 mt-1 text-left">Upload general event flyers or marketing images.</p>
+                            </div>
+                           
+                            <button type="submit" class="w-full bg-primary-blue text-white py-3 rounded-full font-semibold hover:bg-indigo-700 transition duration-150 shadow-md transform hover:scale-[1.01]">
+                                Upload Flyer/Asset
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Upload Forms Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                       
+                        <!-- Column 1: Simulated Song Upload -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-2 border-red-300">
+                            <h3 class="text-xl font-bold text-red-700 mb-4 text-center border-b pb-2 border-red-200">
+                                Simulated Song Upload
+                            </h3>
+                            <form id="song-upload-form" onsubmit="handleSongUpload(event)" class="space-y-4">
+                                <!-- 1. Song Title -->
+                                <div>
+                                    <label for="song-title" class="block text-sm font-medium text-red-700 mb-1 text-left">Song Title</label>
+                                    <input type="text" id="song-title" required class="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150 text-gray-800">
+                                </div>
+                               
+                                <!-- 2. Artist Name -->
+                                <div>
+                                    <label for="artist-name" class="block text-sm font-medium text-red-700 mb-1 text-left">Artist Name (or Group)</label>
+                                    <input type="text" id="artist-name" required class="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150 text-gray-800">
+                                </div>
+                               
+                                <!-- 3. Commission Rate -->
+                                <div>
+                                    <label for="commission-rate" class="block text-sm font-medium text-red-700 mb-1 text-left">Commission per Download (LRD)</label>
+                                    <input type="number" id="commission-rate" required min="0" step="0.01" value="50.00" placeholder="e.g., 50.00" class="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150 text-gray-800">
+                                </div>
+                               
+                                <!-- 4. Album Art / Cover Image File (Updated Label) -->
+                                <div>
+                                    <label for="artist-image" class="block text-sm font-medium text-red-700 mb-1 text-left">Album Art / Cover Image (.jpg, .png)</label>
+                                    <input type="file" id="artist-image" accept="image/jpeg,image/png" required class="w-full text-gray-600 bg-white border border-red-300 rounded-lg p-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200 transition duration-150">
+                                </div>
+
+                                <!-- 5. Song File -->
+                                <div>
+                                    <label for="song-file" class="block text-sm font-medium text-red-700 mb-1 text-left">Song File (.mp3 or .wav)</label>
+                                    <input type="file" id="song-file" accept=".mp3,.wav" required class="w-full text-gray-600 bg-white border border-red-300 rounded-lg p-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:file:bg-red-100 file:text-red-700 hover:file:bg-red-200 transition duration-150">
+                                </div>
+                               
+                                <button type="submit" class="w-full bg-red-600 text-white py-3 rounded-full font-semibold hover:bg-red-700 transition duration-150 shadow-md transform hover:scale-[1.01]">
+                                    Submit Song for Upload
+                                </button>
+                            </form>
+                        </div>
+                       
+                        <!-- Column 2: Simulated Video Upload -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-2 border-red-300">
+                            <h3 class="text-xl font-bold text-red-700 mb-4 text-center border-b pb-2 border-red-200">
+                                Simulated Video Upload
+                            </h3>
+                            <form id="video-upload-form" onsubmit="handleVideoUpload(event)" class="space-y-4">
+                                <!-- 1. Video Title -->
+                                <div>
+                                    <label for="video-title" class="block text-sm font-medium text-red-700 mb-1 text-left">Video Title</label>
+                                    <input type="text" id="video-title" required class="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150 text-gray-800">
+                                </div>
+                               
+                                <!-- 2. Artist Name -->
+                                <div>
+                                    <label for="video-artist-name" class="block text-sm font-medium text-red-700 mb-1 text-left">Artist Name (or Group)</label>
+                                    <input type="text" id="video-artist-name" required class="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150 text-gray-800">
+                                </div>
+                               
+                                <!-- 3. YouTube Embed URL -->
+                                <div>
+                                    <label for="video-embed-url" class="block text-sm font-medium text-red-700 mb-1 text-left">YouTube Embed URL</label>
+                                    <input type="url" id="video-embed-url" required placeholder="e.g., https://www.youtube.com/embed/VIDEO_ID" class="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150 text-gray-800">
+                                    <p class="text-xs text-gray-500 mt-1 text-left">Please use the embed link format (e.g. `youtube.com/embed/...`)</p>
+                                </div>
+
+                                <div class="h-[146px] flex items-center justify-center">
+                                    <p class="text-gray-400 text-sm italic">
+                                        No video file upload required; only the embed URL is stored.
+                                    </p>
+                                </div>
+                               
+                                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-full font-semibold hover:bg-blue-700 transition duration-150 shadow-md transform hover:scale-[1.01]">
+                                    Submit Video Link
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                   
+                    <!-- Logout Button -->
+                    <div class="mt-8 text-center">
+                        <button onclick="developerLogout()" class="bg-gray-500 text-white py-2 px-6 rounded-full font-semibold hover:bg-gray-600 transition duration-150 shadow-md">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="about" class="py-16 px-4 sm:px-6 lg:px-8 bg-white rounded-xl shadow-lg my-12">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-4xl font-bold text-center mb-10 text-primary-blue border-b-2 border-accent-gold pb-3">
+                    About GOSHEN
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-700">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-3 text-accent-gold">Our Vision</h3>
+                        <p class="mb-4 leading-relaxed">
+                            The name **GOSHEN** represents a place of provision, light, and safety in scripture. Our music ministry is founded on this promise, aiming to provide listeners with spiritual nourishment and songs that uplift the soul. We believe in the power of contemporary gospel music to break barriers and carry the message of hope across the globe.
+                        </p>
+                        <p class="leading-relaxed">
+                            Since our formation, our focus has been on creating genuine, high-quality praise and worship experiences. Every track we produce is a prayer set to melody, designed to draw you closer to faith.
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-3 text-accent-gold">Our Music and Uploaded Songs</h3>
+                        <p class="mb-4 leading-relaxed">
+                            Our catalog of **uploaded songs** spans traditional hymns, contemporary worship, and dynamic praise anthems. We are committed to frequently uploading new material, including singles, live recordings from our tours, and exclusive acoustic sessions, ensuring our audience always has fresh content.
+                        </p>
+                        <p class="leading-relaxed">
+                            All our music is professionally produced and available on major streaming platforms. We strive for a sound that is both musically rich and spiritually profound. You can find our newest releases and full albums in the <a href="#music" class="text-primary-blue hover:text-accent-gold font-bold">Music section</a> below!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="music" class="py-12 px-4 sm:px-6 lg:px-8">
+            <h2 class="text-4xl font-bold text-center mb-10 text-primary-blue border-b-2 border-accent-gold pb-3">
+                Our Latest Music
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+
+                <div class="bg-white rounded-xl shadow-2xl overflow-hidden transform hover:scale-[1.02] transition duration-300 group">
+                    <img src="https://placehold.co/600x400/312e81/fcd34d?text=GLORY+ALBUM" alt="Glory Album Cover" class="w-full h-48 object-cover group-hover:opacity-80 transition duration-300">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold text-primary-blue mb-2">Glory Reign (Album)</h3>
+                        <p class="text-gray-600 mb-4">A powerful collection of worship songs released in 2024.</p>
+                        <a href="#" class="text-accent-gold font-medium hover:text-yellow-600 flex items-center">
+                            Listen to Album &rarr;
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-2xl overflow-hidden transform hover:scale-[1.02] transition duration-300 group">
+                    <img src="https://placehold.co/600x400/4c0099/ffffff?text=FAITH+EP" alt="Faith EP Cover" class="w-full h-48 object-cover group-hover:opacity-80 transition duration-300">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold text-primary-blue mb-2">The Faith EP</h3>
+                        <p class="text-gray-600 mb-4">Uplifting tracks focused on trusting the journey.</p>
+                        <a href="#" class="text-accent-gold font-medium hover:text-yellow-600 flex items-center">
+                            Stream Tracks &rarr;
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-2xl overflow-hidden transform hover:scale-[1.02] transition duration-300 group">
+                    <img src="https://placehold.co/600x400/9d174d/fcd34d?text=PRAISE+SINGLES" alt="Praise Singles Cover" class="w-full h-48 object-cover group-hover:opacity-80 transition duration-300">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold text-primary-blue mb-2">Unwavering Praise (Single)</h3>
+                        <p class="text-gray-600 mb-4">Our newest single is available on all platforms.</p>
+                        <a href="#" class="text-accent-gold font-medium hover:text-yellow-600 flex items-center">
+                            Watch Video &rarr;
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="max-w-4xl mx-auto mt-16">
+                <h3 class="text-3xl font-bold text-center mb-8 text-indigo-700 border-b border-gray-300 pb-3">
+                    Featured Singles & Downloads
+                </h3>
+
+                <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-xl shadow hover:shadow-2xl transition duration-300 border-l-4 border-accent-gold">
+                        <div class="flex-grow mb-2 sm:mb-0">
+                            <p class="font-bold text-xl text-primary-blue">1. The Promised Land</p>
+                            <p class="text-sm text-gray-500">From the album 'Glory Reign'. A powerful testimony.</p>
+                        </div>
+                        <div class="flex space-x-3 mt-2 sm:mt-0">
+                            <a href="#" class="flex-shrink-0 text-primary-blue font-medium hover:text-indigo-700 transition duration-150 flex items-center text-sm p-1">
+                                Listen
+                                <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                            </a>
+                            <a href="#" class="flex-shrink-0 px-3 py-1 bg-accent-gold text-primary-blue font-semibold rounded-full hover:bg-yellow-400 transition duration-150 flex items-center shadow-md text-sm">
+                                Download
+                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-xl shadow hover:shadow-2xl transition duration-300">
+                        <div class="flex-grow mb-2 sm:mb-0">
+                            <p class="font-bold text-xl text-primary-blue">2. Light in the Wilderness</p>
+                            <p class="text-sm text-gray-500">A newly uploaded acoustic recording. Exclusive to our site!</p>
+                        </div>
+                        <div class="flex space-x-3 mt-2 sm:mt-0">
+                            <a href="#" class="flex-shrink-0 text-primary-blue font-medium hover:text-indigo-700 transition duration-150 flex items-center text-sm p-1">
+                                View Lyrics
+                                <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM7 8a1 1 0 000 2h6a1 1 0 100-2H7zM7 13a1 1 0 000 2h6a1 1 0 100-2H7zM5 3a2 2 0 012-2h6a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V3z"></path></svg>
+                            </a>
+                            <a href="#" class="flex-shrink-0 px-3 py-1 bg-accent-gold text-primary-blue font-semibold rounded-full hover:bg-yellow-400 transition duration-150 flex items-center shadow-md text-sm">
+                                Download
+                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-xl shadow hover:shadow-2xl transition duration-300">
+                        <div class="flex-grow mb-2 sm:mb-0">
+                            <p class="font-bold text-xl text-primary-blue">3. Hear My Cry</p>
+                            <p class="text-sm text-gray-500">The B-side track from the 'Faith EP'.</p>
+                        </div>
+                        <div class="flex space-x-3 mt-2 sm:mt-0">
+                            <a href="#" class="flex-shrink-0 text-primary-blue font-medium hover:text-indigo-700 transition duration-150 flex items-center text-sm p-1">
+                                Listen
+                                <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                            </a>
+                            <a href="#" class="flex-shrink-0 px-3 py-1 bg-accent-gold text-primary-blue font-semibold rounded-full hover:bg-yellow-400 transition duration-150 flex items-center shadow-md text-sm">
+                                Download
+                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+       
+        <!-- VIDEOS SECTION -->
+        <section id="videos" class="py-12 px-4 sm:px-6 lg:px-8 bg-indigo-50 rounded-xl my-12">
+            <h2 class="text-4xl font-bold text-center mb-10 text-primary-blue border-b-2 border-primary-blue pb-3">
+                Watch Our Latest Videos
+            </h2>
+            <p class="text-center text-lg text-gray-600 mb-8">
+                Experience the power of GOSHEN live! Watch our official music videos, concert clips, and devotional content.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+               
+                <!-- Featured Video 1: Placeholder for a high-quality M/V -->
+                <div class="bg-white rounded-xl shadow-2xl p-4">
+                    <div class="video-responsive mb-3">
+                        <!-- Placeholder YouTube Embed - Replace with actual video ID -->
+                        <iframe
+                            src="https://www.youtube.com/embed/z9eB_I3d01g"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <h3 class="text-xl font-semibold text-primary-blue mb-1">Official Music Video: "Glorious"</h3>
+                    <p class="text-gray-600 text-sm">The highly anticipated visual accompaniment to our lead single.</p>
+                </div>
+
+                <!-- Featured Video 2: Placeholder for a Live Performance -->
+                <div class="bg-white rounded-xl shadow-2xl p-4">
+                    <div class="video-responsive mb-3">
+                         <!-- Placeholder YouTube Embed - Replace with actual video ID -->
+                        <iframe
+                            src="https://www.youtube.com/embed/SWixVrBfNiQ"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <h3 class="text-xl font-semibold text-primary-blue mb-1">Live Concert: "Hear My Cry" Acoustic</h3>
+                    <p class="text-gray-600 text-sm">An intimate, powerful live performance from our recent tour.</p>
+                </div>
+            </div>
+
+            <div class="text-center mt-10">
+                <a href="https://www.youtube.com/@SoundOfGoshen" target="_blank" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-xl text-white bg-red-600 hover:bg-red-700 transition duration-300 transform hover:scale-105">
+                    View All Videos on YouTube
+                    <svg class="ml-2 -mr-1 h-5 w-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.049 4.316c-.235.889-.83 3.655-1.708 7.23C19.46 15.694 18.253 19.34 16.59 22.064c-.452.753-1.01 1.096-1.574 1.258-.564.162-1.127.118-1.69-.126-1.157-.492-2.314-1.18-3.471-2.064-1.157-.884-2.314-1.92-3.471-3.111C5.748 16.59 4.54 13.064 3.662 9.488c-.878-3.575-1.473-6.341-1.708-7.23-.235-.889-.28-1.558.106-1.967.385-.41 1.014-.492 1.884-.247 1.353.385 2.51 1.422 3.471 3.111.961 1.689 1.574 3.73 1.832 6.126.257 2.396.18 4.67-.179 6.822-.359 2.152-.961 4.102-1.801 5.852-1.792 3.67 1.29 5.862 5.093 5.092 5.092 1.656-.328 3.312-1.212 4.968-2.651 1.656-1.439 3.312-3.308 4.968-5.607 1.656-2.299 3.312-5.127 4.968-8.484 1.656-3.357 3.312-7.275 4.968-11.844.662-1.782.162-3.321-1.442-4.664-1.604-1.343-3.693-1.868-6.269-1.574zM12 24c-6.627 0-12-5.373-12-12S5.373 0 12 0s12 5.373 12 12-5.373 12-12 12z"/>
+                    </svg>
+                </a>
+            </div>
+        </section>
+
+        <section id="events" class="py-12 px-4 sm:px-6 lg:px-8 bg-indigo-100 rounded-xl my-12">
+            <h2 class="text-4xl font-bold text-center mb-10 text-primary-blue border-b-2 border-primary-blue pb-3">
+                Upcoming Events & Tours
+            </h2>
+
+            <div class="space-y-6 max-w-4xl mx-auto">
+                <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-xl p-5 hover:shadow-2xl transition duration-300 border-l-4 border-accent-gold">
+                    <div class="flex-shrink-0 mb-4 md:mb-0 md:mr-6 text-center">
+                        <p class="text-3xl font-bold text-primary-blue">15</p>
+                        <p class="text-lg text-gray-500">NOV</p>
+                    </div>
+                    <div class="flex-grow">
+                        <h4 class="text-xl font-semibold text-primary-blue">Worship Night at Christian Life Church</h4>
+                        <p class="text-gray-600">Christian Life Church, Unification City, Lower Margibi County, Liberia</p>
+                        <p class="text-sm text-gray-400 mt-2">Tickets available now through Eventbrite.</p>
+                    </div>
+                    <a href="#" class="mt-4 md:mt-0 md:ml-6 flex-shrink-0 text-accent-gold font-medium hover:text-yellow-600 self-center">
+                        Get Details &rarr;
+                    </a>
+                </div>
+
+                <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-xl p-5 hover:shadow-2xl transition duration-300 border-l-4 border-accent-gold">
+                    <div class="flex-shrink-0 mb-4 md:mb-0 md:mr-6 text-center">
+                        <p class="text-3xl font-bold text-primary-blue">03</p>
+                        <p class="text-lg text-gray-500">DEC</p>
+                    </div>
+                    <div class="flex-grow">
+                        <h4 class="text-xl font-semibold text-primary-blue">International Gospel Fest</h4>
+                        <p class="text-gray-600">The Grand Arena, London, UK</p>
+                        <p class="text-sm text-gray-400 mt-2">Performing on the main stage at 7:00 PM.</p>
+                    </div>
+                    <a href="#" class="mt-4 md:mt-0 md:ml-6 flex-shrink-0 text-accent-gold font-medium hover:text-yellow-600 self-center">
+                        View Tour Dates &rarr;
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="py-12 px-4 sm:px-6 lg:px-8 mb-12">
+            <h2 class="text-4xl font-bold text-center mb-10 text-primary-blue border-b-2 border-accent-gold pb-3">
+                Connect With Us
+            </h2>
+
+            <div class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-2xl">
+                <p class="text-center text-gray-600 mb-6">
+                    Interested in booking GOSHEN GOSPEL for an event, or just want to say hello? You can reach us directly or use the form below!
+                </p>
+
+                <div class="mb-8 p-4 bg-indigo-50 rounded-lg border border-indigo-200 text-center">
+                    <p class="text-lg font-semibold text-primary-blue mb-2">Direct Contact Information</p>
+                    <p class="text-gray-700">
+                        <span class="font-medium text-accent-gold">Email:</span> <a href="mailto:nelsoneric0002@gmail.com" class="hover:text-primary-blue transition duration-150">nelsoneric0002@gmail.com</a>
+                    </p>
+                    <p class="text-gray-700 mt-1">
+                        <span class="font-medium text-accent-gold">WhatsApp:</span> <a href="https://wa.me/231880930963" target="_blank" class="hover:text-primary-blue transition duration-150">+231880930963</a>
+                    </p>
+                </div>
+                <!-- Contact Form Message Box -->
+                <div id="contact-message-box" class="hidden p-4 rounded-lg mb-4 font-medium text-center transition duration-300" role="alert">
+                    </div>
+
+                <form onsubmit="handleFormSubmit(event)">
+                    <div class="mb-4">
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                        <input type="text" id="name" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150">
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Message / Booking Details</label>
+                        <textarea id="message" name="message" rows="4" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-primary-blue text-accent-gold py-3 rounded-full font-semibold shadow-lg hover:bg-indigo-700 transition duration-300 transform hover:scale-[1.01]">
+                        Send Message
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-primary-blue text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-indigo-200 mb-4">&copy; 2025 GOSHEN GOSPEL Site. All rights reserved.</p>
+            <div class="flex justify-center space-x-6">
+                <a href="#" class="text-white hover:text-accent-gold transition duration-150">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.615 3.19c-.615-.27-1.16-.405-1.68-.435C15.9 2.5 12 2.5 12 2.5s-3.9 0-5.935.255c-.52.03-1.065.165-1.68.435C3.79 3.46 3 4.25 3 5.37v13.26c0 1.12.79 1.91 2.385 2.18.615.27 1.16.405 1.68.435 2.035.255 5.935.255 5.935.255s3.9 0 5.935-.255c.52-.03 1.065-.165 1.68-.435 1.595-.27 2.385-1.06 2.385-2.18V5.37c0-1.12-.79-1.91-2.385-2.18zm-7.615 14.11v-8.6l5.73 4.3-5.73 4.3z"/></svg>
+                </a>
+                <a href="#" class="text-white hover:text-accent-gold transition duration-150">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.071 1.17.055 1.805.249 2.227.462.513.29.97.66 1.35 1.05.38.389.76.847 1.05 1.35.214.422.408 1.057.462 2.227.06 1.266.071 1.646.071 4.85s-.012 3.584-.071 4.85c-.055 1.17-.249 1.805-.462 2.227-.29.513-.66 1.01-1.05 1.35-.389.38-.847.76-1.35 1.05-.422.214-1.057.408-2.227.462-1.266.06-1.646.071-4.85.071s-3.584-.012-4.85-.071c-1.17-.055-1.805-.249-2.227-.462-.29-.513-.66-1.01-1.05-1.35-.38-.389-.76-.847-1.35-1.05-.422-.214-1.057-.408-2.227-.462-1.266-.06-1.646-.071-4.85-.071zM12 7.763c-2.338 0-4.237 1.899-4.237 4.237s1.899 4.237 4.237 4.237 4.237-1.899 4.237-4.237c0-2.338-1.899-4.237-4.237-4.237zm0 6.913c-1.472 0-2.676-1.204-2.676-2.676s1.204-2.676 2.676-2.676 2.676 1.204 2.676 2.676c0 1.472-1.204 2.676-2.676 2.676zm5.122-8.332c-.521 0-.944.423-.944.944s.423.944.944.944.944-.423.944-.944-.423-.944-.944-.944z"/></svg>
+                </a>
+                <a href="#" class="text-white hover:text-accent-gold transition duration-150">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24h11.492v-9.294H9.691v-3.626h3.126V8.428c0-3.116 1.899-4.816 4.694-4.816 1.396 0 2.76.104 3.064.149v3.453h-2.183c-1.543 0-1.854.736-1.854 1.817v2.383h3.879l-.507 3.626h-3.372V24h6.115c.732 0 1.325-.593 1.325-1.325V1.325C24 .593 23.407 0 22.675 0z"/></svg>
+                </a>
+            </div>
+            <div class="mt-4">
+                <button id="dev-login-btn" class="text-indigo-400 text-sm hover:text-accent-gold transition duration-150" onclick="showPasswordModal()">Developer Login</button>
+            </div>
+        </div>
+    </footer>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm m-4 transform transition-all">
+            <h3 class="text-xl font-bold text-primary-blue mb-4 text-center">Developer Access</h3>
+           
+            <div id="modal-message-box" class="hidden p-3 rounded-lg mb-4 font-medium text-center text-sm" role="alert">
+                </div>
+
+            <form onsubmit="handleDevLogin(event)">
+                <label for="dev-password-input" class="block text-sm font-medium text-gray-700 mb-1">Developer Password</label>
+                <input type="password" id="dev-password-input" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150">
+                <div class="flex justify-between mt-4 space-x-2">
+                    <button type="button" onclick="hidePasswordModal()" class="w-1/2 bg-gray-200 text-gray-700 py-2 rounded-full font-medium hover:bg-gray-300 transition duration-150">
+                        Cancel
+                    </button>
+                    <button type="submit" class="w-1/2 bg-primary-blue text-white py-2 rounded-full font-semibold hover:bg-indigo-700 transition duration-150">
+                        Login
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
